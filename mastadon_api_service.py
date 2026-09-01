@@ -30,7 +30,7 @@ class MastadonAPIService:
         print(json.loads(response.text))
         
     def searchTimelineHashtag(self, hashtag: str):
-        return self.mastadon.timeline_hashtag(hashtag=hashtag)
+        return self.mastadon.timeline_hashtag(hashtag=hashtag, limit=40)
 
     def search(self, query : str, type = "hashtags"):
         return self.mastadon.search_v2(q=query)
