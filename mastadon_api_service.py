@@ -8,7 +8,7 @@ from mastodon import Mastodon
 class MastadonAPIService:
     
     def __init__(self):
-        load_dotenv
+        load_dotenv()
         self.mastadon = Mastodon(access_token=os.getenv("MASTADON_API_ACCESS_TOKEN"), api_base_url = "https://mastodon.au")
 
     def getAccessToken():
@@ -28,6 +28,9 @@ class MastadonAPIService:
         
         os.environ["MASTADON_API_ACCESS_TOKEN"] = json.loads(response.text)["access_token"]
         print(json.loads(response.text))
+        
+    def searchTimelineHashtag(self, hashtag: str):
+        return self.mastadon.timeline_hashtag(hashtag=hashtag)
 
     def search(self, query : str, type = "hashtags"):
         return self.mastadon.search_v2(q=query)
@@ -36,6 +39,5 @@ class MastadonAPIService:
         return self.mastadon.status(status_id)
     
     def getReplies(self, status_id):
-        self.mastadon.status_context
-        context = self.mastodon.status_context(status_id)
-        return context["descendants"], 
+        context = self.mastadon.status_context(status_id)
+        return context["descendants"]

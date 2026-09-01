@@ -13,12 +13,11 @@ class Crawler:
         for keyword in keywords:
             self.crawlThroughKeyword(graph=infomation_diffiusion_network, keyword=keyword)
         
-        print(infomation_diffiusion_network)
-
     def crawlThroughKeyword(self, graph, keyword: str):
         print(keyword)
-        searchResult = self.mastadon_api_service.search(query=keyword)
-        for status in searchResult.statuses:
+        searchResult = self.mastadon_api_service.searchTimelineHashtag(hashtag=keyword)
+        print(len(searchResult))
+        for status in searchResult:
             if status.id not in graph:
                 self.crawlStatus(graph=graph, status=status)
 
