@@ -31,3 +31,11 @@ class MastadonAPIService:
 
     def search(self, query : str, type = "hashtags"):
         return self.mastadon.search_v2(q=query)
+    
+    def getStatus(self, status_id):
+        return self.mastadon.status(status_id)
+    
+    def getReplies(self, status_id):
+        self.mastadon.status_context
+        context = self.mastodon.status_context(status_id)
+        return context["descendants"], 
