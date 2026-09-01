@@ -1,6 +1,7 @@
 from mastadon_api_service import MastadonAPIService
 import networkx as nx
 
+flowerBox = "--------------------------------------------------------------------"
 
 class Crawler:
     
@@ -14,12 +15,19 @@ class Crawler:
             self.crawlThroughKeyword(graph=infomation_diffiusion_network, keyword=keyword)
         
     def crawlThroughKeyword(self, graph, keyword: str):
-        print(keyword)
+        
+        print(flowerBox)
+        print(f"Beginning keyword search for: #{keyword}")
         searchResult = self.mastadon_api_service.searchTimelineHashtag(hashtag=keyword)
-        print(len(searchResult))
+        print(f"len(searchResult) results found. Beginning status crawl...")
+        print(flowerBox)
+        
         for status in searchResult:
             if status.id not in graph:
                 self.crawlStatus(graph=graph, status=status)
+                
+        print("Status crawl finished")
+        print(flowerBox)
 
     def crawlStatus(self, graph, status):
         graph.add_node(status.id, status=status)
