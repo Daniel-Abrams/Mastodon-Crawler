@@ -1,0 +1,19 @@
+{
+    "directed": true,
+    "multigraph": false,
+    "graph": {},
+    "nodes": [
+        {
+            "status": {
+                "id": "112003291774117107",
+                "uri": "https://m.ai6yr.org/users/MiBaWi/statuses/112003291612604815",
+                "url": "https://m.ai6yr.org/@MiBaWi/112003291612604815",
+                "account": {
+                    "id": "109364555632906295",
+                    "username": "MiBaWi",
+                    "acct": "MiBaWi@m.ai6yr.org",
+                    "display_name": "Michael Barthel / MiBaWi",
+                    "discoverable": true,
+                    "group": false,
+                    "locked": false,
+                    "created_at": 

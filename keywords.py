@@ -1,22 +1,17 @@
 
 # Keywords related to Australian bush fires of 2019-2020
 
-keywords = {
-    "flawedinventions",
+keywords = [
+    "australiafires",
     "bushfires",
     "bushfire",
     "australiafires",
-    "australiaburns",
-    "australiabushfire",
-    "australiaisburning",
-    "australiaonfire",
-    "Sydney",
     "sydneysmoke",
-    "Melbourne",
-    "Adelaide",
-    "Canberra",
+    "nswfire",
     "nswfires",
+    "nswbushfire",
+    "nswbushfires",
     "qldfires",
+    "vicfires",
     "wildliferescue",
-    "koalas",
-}
+]
