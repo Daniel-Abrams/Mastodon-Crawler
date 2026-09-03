@@ -6,8 +6,8 @@ from networkx.readwrite import json_graph
 from datetime import datetime, timezone
 
 # Approximate timeline of the australia wildfires
-start = datetime(2019, 9, 1, tzinfo=timezone.utc)
-end = datetime(2021, 1, tzinfo=timezone.utc)
+start = datetime(2023, 10, 1, tzinfo=timezone.utc)
+end = datetime(2024, 12, 31, tzinfo=timezone.utc)
 
 flowerBox = "--------------------------------------------------------------------"
 
@@ -41,11 +41,12 @@ class Crawler:
         user_graph = nx.DiGraph()
         
         for user in seedUsers:
-            self.crawlUsers(user_graph, self.mastodon_api_service.getAccountId(user))
+            self.crawlUser(user_graph, self.mastodon_api_service.getAccountId(user))
 
         print(user_graph.number_of_nodes())
         
     def crawlUser(self, graph, user):
+        print(f"Crawling user with id: {user.id}")
         statuses = self.mastodon_api_service.getStatusesByAccountID(user.id, start_date=start, end_date=end)
         graph.add_node(user.id, user=user)
         
@@ -75,7 +76,8 @@ class Crawler:
         self.keywords = keywords
         for keyword in keywords:
             self.crawlThroughKeyword(graph=infomation_diffiusion_network, keyword=keyword)
-            
+        
+        print(infomation_diffiusion_network.number_of_nodes())
         self.serliazeStatusGraph(infomation_diffiusion_network)
         
     def crawlThroughKeyword(self, graph, keyword: str):
@@ -83,7 +85,7 @@ class Crawler:
         print(flowerBox)
         print(f"Beginning keyword crawl for: #{keyword}")
         
-        for status in self.mastodon_api_service.searchTimelineHashtag(hashtag=keyword):
+        for status in self.mastodon_api_service.searchTimelineHashtag(hashtag=keyword, min_id=start, max_id=end):
             if status.id not in graph:
                 self.crawlStatus(graph=graph, status=status)
             
@@ -108,10 +110,6 @@ class Crawler:
     def crawlStatus(self, graph, status):
         graph.add_node(status.id, status=status)
 
-        # Collect relevant keywords for later
-        for tag in status.tags:
-            self.relevant_kewords.add(tag.name)
-            
         # Handle Replies
         replies = self.mastodon_api_service.getReplies(status_id=status.id)
         for reply in replies:

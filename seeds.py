@@ -5,6 +5,8 @@ keywords = [
     "australiafires",
     "bushfires",
     "bushfire",
+    "firewarning",
+    "blacksummer",
     "australiafires",
     "sydneysmoke",
     "nswfire",
@@ -12,6 +14,14 @@ keywords = [
     "nswbushfire",
     "nswbushfires",
     "qldfires",
+    "qldbushfires",
     "vicfires",
+    "vicbushfires",
+    "grampiansfires",
     "wildliferescue",
+    "evacuation"
+]
+
+seed_users = [
+    "abcfeeds@rssfeed.media"
 ]
