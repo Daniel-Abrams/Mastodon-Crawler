@@ -2,6 +2,7 @@
 # Keywords related to Australian bush fires of 2019-2020
 
 keywords = [
+    "evacuation",
     "australiafires",
     "bushfires",
     "bushfire",
@@ -19,7 +20,6 @@ keywords = [
     "vicbushfires",
     "grampiansfires",
     "wildliferescue",
-    "evacuation"
 ]
 
 seed_users = [

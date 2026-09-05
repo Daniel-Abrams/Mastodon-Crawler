@@ -12,7 +12,9 @@ end = datetime(2024, 12, 31, tzinfo=timezone.utc)
 flowerBox = "--------------------------------------------------------------------"
 
 class Crawler:
+    depth_limit = 80
     keywords = []
+    seed_users = {}
     relevance_keywords = [
         "fire",
         "fires",
@@ -47,8 +49,8 @@ class Crawler:
         
     def crawlUser(self, graph, user):
         print(f"Crawling user with id: {user.id}")
-        statuses = self.mastodon_api_service.getStatusesByAccountID(user.id, start_date=start, end_date=end)
         graph.add_node(user.id, user=user)
+        statuses = self.mastodon_api_service.getStatusesByAccountID(user.id, start_date=start, end_date=end)
         
         for status in statuses:
             if self.isStatusRelevant(status):
@@ -59,8 +61,20 @@ class Crawler:
                         graph.add_edge(user.id, mention.id, "mentions")
                     except MastodonAPIError:
                         print(f"Could not resolve user with id {mention.id}")
+        
+        for follower in self.mastodon_api_service.getFollowers(user.id):
+            if follower.id not in graph and self.isUserRelevant(user):    
+                if follower.followers_count >= 400:
+                    self.crawl_user(follower)
+                graph.add_edge(follower.id, user.id, "follows")
                         
-                
+    def isUserRelevant(self, user):
+        for status in self.mastodon_api_service.getStatusesByAccountID(user.id, start, end):
+            if self.isStatusRelevant(status):
+                return True
+
+        return False
+    
     def isStatusRelevant(self, status):
         for relevant_word in self.relevance_keywords:
             if relevant_word in status.content:
@@ -79,15 +93,24 @@ class Crawler:
         
         print(infomation_diffiusion_network.number_of_nodes())
         self.serliazeStatusGraph(infomation_diffiusion_network)
-        
+        with open("seed_users.json", "w") as file:
+            json.dump(json.dumps(self.seed_users), file)
+         
     def crawlThroughKeyword(self, graph, keyword: str):
-        
+    
         print(flowerBox)
         print(f"Beginning keyword crawl for: #{keyword}")
         
-        for status in self.mastodon_api_service.searchTimelineHashtag(hashtag=keyword, min_id=start, max_id=end):
+        for status in self.mastodon_api_service.searchTimelineHashtag(hashtag=keyword, min_id=start, max_id=end, favorite_requirement=10):
             if status.id not in graph:
-                self.crawlStatus(graph=graph, status=status)
+                # Check if user is a seed user candidate, which we define as having at least 750 followers
+                user = self.mastodon_api_service.getAccount(status.account.id)
+                if user.followers_count >= 750:
+                    self.seed_users[user.id] = user.acct
+                
+                # Crawl the Status
+                self.crawlStatus(graph=graph, status=status, depth=0)
+                
             
         print("Status crawl finished")
         print(flowerBox)
@@ -107,36 +130,36 @@ class Crawler:
         with open("status_graph.json", "w") as f:
             json.dump(data, f, indent=4)
 
-    def crawlStatus(self, graph, status):
+    def crawlStatus(self, graph, status, depth):
+        print(f"new depth: {depth}")
         graph.add_node(status.id, status=status)
 
-        # Handle Replies
-        replies = self.mastodon_api_service.getReplies(status_id=status.id)
-        for reply in replies:
-            try:
-                if reply.id not in graph: 
-                    new_status = self.mastodon_api_service.getStatus(reply.id)
-                    self.crawlStatus(graph, new_status)
-                graph.add_edge(status.id, reply.id, relationship="reply")
-            except MastodonAPIError:
-                print(f"Could not retrieve reply {reply.id}")
+        if depth < self.depth_limit:
+            # Handle Replies
+            replies = self.mastodon_api_service.getReplies(status_id=status.id)
+            for reply in replies:
+                try:
+                    if reply.id not in graph: 
+                        self.crawlStatus(graph, reply, depth + 1)
+                    graph.add_edge(reply.in_reply_to_id, reply.id, relationship="reply")
+                except MastodonAPIError:
+                    print(f"Could not retrieve reply {reply.id}")
+                
+            # Hanlde Parent Post
+            if status.in_reply_to_id:
+                try:
+                    if status.in_reply_to_id not in graph:
+                        new_status = self.mastodon_api_service.getStatus(status.in_reply_to_id)
+                        self.crawlStatus(graph, new_status, depth + 1)
+                    graph.add_edge(status.in_reply_to_id, status.id, relationship="reply")
+                except MastodonAPIError:
+                    print(f"Could not retrieve parent {status.in_reply_to_id}")
             
-        # Hanlde Parent Post
-        if status.in_reply_to_id:
-            try:
-                if status.in_reply_to_id not in graph:
-                    new_status = self.mastodon_api_service.getStatus(status.in_reply_to_id)
-                    self.crawlStatus(graph, new_status)
-                graph.add_edge(status.in_reply_to_id, status.id, relationship="reply")
-            except MastodonAPIError:
-                print(f"Could not retrieve parent {status.in_reply_to_id}")
-        
-        # Handle If Reblog
-        if status.reblog:
-            try:
-                if status.reblog.id not in graph:
-                    new_status = self.mastodon_api_service.getStatus(status.reblog.id)
-                    self.crawlStatus(graph, new_status)
-                graph.add_edge(status.reblog.id, status.id, type="reblog")
-            except MastodonAPIError:
-                print(f"Could not retrieve original post with id {status.reblog.id}")
+            # Handle If Reblog
+            if status.reblog:
+                try:
+                    if status.reblog.id not in graph:
+                        self.crawlStatus(graph, status.reblog, depth + 1)
+                    graph.add_edge(status.reblog.id, status.id, type="reblog")
+                except MastodonAPIError:
+                    print(f"Could not retrieve original post with id {status.reblog.id}")

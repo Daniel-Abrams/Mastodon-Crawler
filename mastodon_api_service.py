@@ -4,9 +4,15 @@ import json
 from dotenv import load_dotenv
 import os
 from mastodon import Mastodon
+from collections import defaultdict
+from typing import Any
 
 
 class MastodonAPIService:
+    
+    user_cache = {}
+    status_cache = {}
+    reply_dict: defaultdict[str, list[Any]] = defaultdict(list)
     
     def __init__(self):
         load_dotenv()
@@ -31,14 +37,15 @@ class MastodonAPIService:
         os.environ["mastodon_API_ACCESS_TOKEN"] = json.loads(response.text)["access_token"]
         print(json.loads(response.text))
         
-    def searchTimelineHashtag(self, hashtag: str, min_id, max_id, limit=100):
+    def searchTimelineHashtag(self, hashtag: str, min_id, max_id, limit=100, favorite_requirement=0):
         statuses = self.mastodon.timeline_hashtag(hashtag=hashtag, min_id=min_id, max_id=max_id, limit=40)
         ctr = 0
 
         while statuses:
             for status in statuses:
-                yield status
-                ctr += 1
+                if status.favourites_count >= favorite_requirement:
+                    yield status
+                    ctr += 1
                 if ctr >= limit:
                     print(f"Found {limit} results for statuses containing #{hashtag}")
                     return
@@ -50,6 +57,8 @@ class MastodonAPIService:
         return self.mastodon.search_v2(q=query)
     
     def getStatus(self, status_id):
+        if status_id in self.status_cache:
+            return self.status_cache[status_id]
         return self.mastodon.status(status_id)
     
     def getAccountId(self, username):
@@ -62,15 +71,40 @@ class MastodonAPIService:
 
     def getStatusesByAccountID(self, id, start_date, end_date):
         statuses = self.mastodon.account_statuses(id,start_date, end_date, limit=40)
-        result = []
-        print(len(statuses))
-        while statuses:
-            for status in statuses:
-                result.append(status)
-            statuses = self.mastodon.fetch_next(statuses)
-
-        return result
+        
+        if (id,start_date,end_date) in self.status_cache:
+            return self.status_cache[(id,start_date,end_date)]
+        else:
+            self.status_cache[(id,start_date,end_date)] = []
+            result = []
+            while statuses:
+                for status in statuses:
+                    yield status
+                    self.status_cache[(id,start_date,end_date)].append(status)
+                statuses = self.mastodon.fetch_next(statuses)
+            self.status_cache[(id,start_date,end_date)] = result
     
     def getReplies(self, status_id):
+        if status_id in self.reply_dict:
+            return self.reply_dict[status_id]
         context = self.mastodon.status_context(status_id)
-        return context["descendants"]
+        for status in context["descendants"]:
+            self.status_cache[status.id] = status
+            self.reply_dict[status.in_reply_to_id].append(status)
+        for status in context["ancestors"]:
+            self.status_cache[status.id] = status
+        return self.reply_dict[status_id]
+    
+    def getAccount(self, id):
+        if id in self.user_cache:
+            return self.user_cache[id]
+        else:
+            self.user_cache[id] = self.mastodon.account(id)
+            return self.user_cache[id]
+
+    def getFollowers(self, id):
+        followers = self.mastodon.account_followers(id)
+        while followers:
+            for follower in followers:
+                yield follower
+            followers = self.mastodon.fetch_next(id)
