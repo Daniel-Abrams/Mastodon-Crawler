@@ -16,7 +16,7 @@ class MastodonAPIService:
     
     def __init__(self):
         load_dotenv()
-        self.mastodon = Mastodon(access_token=os.getenv("MASTODON_API_ACCESS_TOKEN"), api_base_url = "https://mastodon.au")
+        self.mastodon = Mastodon(access_token=os.getenv("MASTODON_API_ACCESS_TOKEN"), api_base_url = "https://mastodon.social")
         self.mastodon.account_verify_credentials()
 
     def getAccessToken():
@@ -25,7 +25,7 @@ class MastodonAPIService:
         API_secret = os.getenv("mastodon_API_SECRET")
         redirect_uri = os.getenv("mastodon_REDIRECT_URI")
         response = requests.post(
-            "https://mastodon.au/oauth/token",
+            "https://mastodon.social/oauth/token",
             data={
                 "client_id": API_key,
                 "client_secret": API_secret,
@@ -37,7 +37,7 @@ class MastodonAPIService:
         os.environ["mastodon_API_ACCESS_TOKEN"] = json.loads(response.text)["access_token"]
         print(json.loads(response.text))
         
-    def searchTimelineHashtag(self, hashtag: str, min_id, max_id, limit=100, favorite_requirement=0):
+    def searchTimelineHashtag(self, hashtag: str, min_id, max_id, limit=200, favorite_requirement=0):
         statuses = self.mastodon.timeline_hashtag(hashtag=hashtag, min_id=min_id, max_id=max_id, limit=40)
         ctr = 0
 

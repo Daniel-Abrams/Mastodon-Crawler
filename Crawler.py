@@ -6,8 +6,8 @@ from networkx.readwrite import json_graph
 from datetime import datetime, timezone
 
 # Approximate timeline of the australia wildfires
-start = datetime(2023, 10, 1, tzinfo=timezone.utc)
-end = datetime(2024, 12, 31, tzinfo=timezone.utc)
+start = datetime(2025, 1, 1, tzinfo=timezone.utc)
+end = datetime(2025, 6, 30, tzinfo=timezone.utc)
 
 flowerBox = "--------------------------------------------------------------------"
 
@@ -101,7 +101,7 @@ class Crawler:
         print(flowerBox)
         print(f"Beginning keyword crawl for: #{keyword}")
         
-        for status in self.mastodon_api_service.searchTimelineHashtag(hashtag=keyword, min_id=start, max_id=end, favorite_requirement=10):
+        for status in self.mastodon_api_service.searchTimelineHashtag(hashtag=keyword, min_id=start, max_id=end, favorite_requirement=2 ):
             if status.id not in graph:
                 # Check if user is a seed user candidate, which we define as having at least 750 followers
                 user = self.mastodon_api_service.getAccount(status.account.id)
@@ -131,7 +131,7 @@ class Crawler:
             json.dump(data, f, indent=4)
 
     def crawlStatus(self, graph, status, depth):
-        print(f"new depth: {depth}")
+        #print(f"new depth: {depth}")
         graph.add_node(status.id, status=status)
 
         if depth < self.depth_limit:
