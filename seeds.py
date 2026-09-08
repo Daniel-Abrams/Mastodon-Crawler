@@ -25,6 +25,33 @@ keywords = [
     "woodleyfire",
 ]
 
-seed_users = [
-    "abcfeeds@rssfeed.media"
-]
+seed_users = {
+"109321601315889133" : "ai6yr@m.ai6yr.org",
+"109362752019399380" : "weatherwest",
+"108209993019225688" : "rustoleumlove@mastodon.online",
+"110088287007315114" : "appassionato",
+"109451653926691270" : "MEActNOW",
+"109327362715368962" : "brianvastag@sciencemastodon.com",
+"109546162332158382" : "h_thoreson@mastodon.world",
+"109367452842773908" : "DoomsdaysCW@kolektiva.social",
+"109334374718728328" : "broadwaybabyto@zeroes.ca",
+"109315182603967008" : "JugglingWithEggs@mstdn.social",
+"109253103044770842" : "sellathechemist",
+"108194605454054225" : "megschwamb@mastodon.online",
+"109304464942897108" : "petergleick@fediscience.org",
+"109310464675917400" : "KimPerales@toad.social",
+"110898481331791840" : "GriffithPark@pixelfed.social",
+"111597721389379321" : "RealJournalism",
+"109943696965534606" : "janettespeyer@flipboard.social",
+"109365953730768772" : "ProPublica@newsie.social",
+"109355190751690360" : "skinnylatte@hachyderm.io",
+"109306535115819993" : "danwentzel@urbanists.social",
+"110514639440820585" : "DorotheaLange@mastodon.ozioso.online",
+"109281672764270206" : "jby@ecoevo.social",
+"111029831180625031" : "Radical_EgoCom",
+"110900324964412148" : "hollywoodreporter",
+"108193471567690291" : "muellertadzio@climatejustice.social",
+"109254519388773773" : "Alex_Verbeek",
+"111306111358247151" : "MaximeCombes@piaille.fr",
+"110433002329275149" : "mappingsupport@m.ai6yr.org",
+}

@@ -82,7 +82,6 @@ class MastodonAPIService:
                     yield status
                     self.status_cache[(id,start_date,end_date)].append(status)
                 statuses = self.mastodon.fetch_next(statuses)
-            self.status_cache[(id,start_date,end_date)] = result
     
     def getReplies(self, status_id):
         if status_id in self.reply_dict:
@@ -107,4 +106,4 @@ class MastodonAPIService:
         while followers:
             for follower in followers:
                 yield follower
-            followers = self.mastodon.fetch_next(id)
+            followers = self.mastodon.fetch_next(followers)
