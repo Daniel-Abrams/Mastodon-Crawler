@@ -4,7 +4,7 @@ import json
 
 def main():
     crawler = Crawler()
-    crawler.crawlUsers(seedUsers=seed_users)
+    crawler.GetRelevantUsers(seedUsers=seed_users)
     # with open("seed_users.json", "r") as file:
     #     users = json.loads(json.load(file))
     #     for key, value in users.items():

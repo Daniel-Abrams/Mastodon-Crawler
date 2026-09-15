@@ -5,173 +5,120 @@ import networkx as nx
 from datetime import datetime, timezone
 from collections import defaultdict
 
-# Approximate timeline of the australia wildfires
+# Approximate timeline of the LA wildfires + some time after
 start = datetime(2025, 1, 1, tzinfo=timezone.utc)
-end = datetime(2025, 6, 30, tzinfo=timezone.utc)
+end = datetime(2025, 12, 31, tzinfo=timezone.utc)
 
 flowerBox = "--------------------------------------------------------------------"
 
 class Crawler:
+    status_ids = set()
+    statuses = []
     user_post_map = defaultdict(set)
-    depth_limit = 80
-    keywords = []
-    seed_users = {}
-    
+    crawled_users_ids = set()
+    users = []
+        
     def __init__(self):
             self.mastodon_api_service = MastodonAPIService()
             
     def loadStatuses(self):
-        with open("status_graph.json", "r") as file:
-            status_graph = json.load(file)
-            for node in status_graph['nodes']:
-                self.user_post_map[node['user_id']].add(node['id'])
+        with open("statuses.json", "r") as file:
+            statuses = json.load(file)
+            for status in statuses:
+                self.user_post_map[status['user_id']].add(status['id'])
     
-    def crawlUsers(self, seedUsers):
-        user_graph = nx.DiGraph()
+    def loadSeedUsers(self):
+        with open("seed_user_candidates.json", "r") as file:
+            self.seed_users = json.load(json.loads(file))
+                    
+    def GetRelevantUsers(self, seedUsers):
         self.loadStatuses()
         
         for id, _ in seedUsers.items():
-            self.crawlUser(user_graph, self.mastodon_api_service.getAccount(id))
-        print(user_graph.number_of_nodes())
+            self.crawlUser(self.mastodon_api_service.getAccount(id))
+        print(f"User crawl completed with {len(self.crawled_users_ids)} users")
+        self.serializeUsers()
         
-    def crawlUser(self, graph, user):
+    def crawlUser(self, user):   
         print(f"Crawling user with id: {user.id} and username: {user.username}")
-        graph.add_node(user.id, user=user)
-        statuses = self.mastodon_api_service.getStatusesByAccountID(user.id, start_date=start, end_date=end)
+        if user.id not in self.crawled_users_ids:
+            self.crawled_users_ids.add(user.id) 
+            self.users.append(user)
         
-        followers = self.mastodon_api_service.getFollowers(user)
-        follower_ids = {follower.id for follower in followers}
-        
-        for status in statuses:
-            if self.isStatusRelevant(status):
-                replies = self.mastodon_api_service.getReplies(status_id=status.id)
+          
+        if user.id in self.user_post_map:
+            for status_id in self.user_post_map[user.id]:
+                print(f"looking at post {status_id} from user {user.username}")
+                status = self.mastodon_api_service.getStatus(status_id)
+                
+                print(f"looking at mentions in {status_id} from user {user.username}")
                 for mention in status.mentions:
                     try:
-                        if mention.id not in graph:
-                            self.crawlUser(graph,mention)
-                        graph.add_edge(user.id, mention.id, relationship="mentions")
+                        if mention.id not in self.crawled_users_ids:
+                            self.crawlUser(self.mastodon_api_service.getAccount(mention.id))
                     except MastodonAPIError:
                         print(f"Could not resolve user with id {mention.id}")
-                for reply in replies:
-                    try:
-                        if self.isUserRelevant(reply.account) and reply.account.id in follower_ids:
-                            self.crawlUser(graph, reply.account)
-                            graph.add_edge(reply.account.id, user.id, relationship="follows")
-                    except MastodonAPIError:
-                            print(f"Could not resolve user with id {reply.account.id}")
-                        
-        
-        for follower in self.mastodon_api_service.getFollowers(user.id):
-            if follower.followers_count >= 0.25 * user.followers_count:
-                if follower.id not in graph and self.isUserRelevant(user):    
-                    self.crawlUser(graph, follower)
-                graph.add_edge(follower.id, user.id, relationship="follows")
-                        
-    def isUserRelevant(self, user):
-        if user.id in self.user_post_map:
-            return True
-        return False
-    
-    def isStatusRelevant(self, status):
-        content = status.content.lower()
-
-        has_fire_term = any(
-            keyword in content
-            for keyword in ["fire", "fires", "wildfire", "wildfires"]
-        )
-
-        has_location = any(
-            keyword in content
-            for keyword in ["los angeles","california","altadena","pasadena","malibu","palisades","eaton"]
-        )
-
-        has_emergency_term = any(
-            keyword in content 
-            for keyword in ["evacuation","evacuate","firefighter","rescue","smoke","shelter"]
-            )
-        
-        has_relevant_hashtag = any(
-            hashtag in status.tags
-            for hashtag in self.keywords
-        )
-
-        return (has_fire_term and (has_location or has_emergency_term)) or has_relevant_hashtag 
             
+            for follower in self.mastodon_api_service.getFollowers(user.id):
+                if follower in self.user_post_map and follower not in self.crawled_users_ids:
+                    self.crawlUser(self.mastodon_api_service.getAccount(follower))
+            for followee in self.mastodon_api_service.getFollowees(user.id):
+                if followee in self.user_post_map and followee not in self.crawled_users_ids:
+                    self.crawlUser(self.mastodon_api_service.getAccount(followee))
+                        
     def crawlKeywords(self, keywords: list[str]):
-        infomation_diffiusion_network = nx.DiGraph()
-        self.keywords = keywords
         for keyword in keywords:
-            self.crawlThroughKeyword(graph=infomation_diffiusion_network, keyword=keyword)
+            self.crawlThroughKeyword(keyword=keyword)
         
-        print(infomation_diffiusion_network.number_of_nodes())
-        self.serliazeStatusGraph(infomation_diffiusion_network)
-        with open("seed_users.json", "w") as file:
-            json.dump(json.dumps(self.seed_users), file)
+        with open("seed_user_candidates.json", "w") as file:
+            json.dump((self.seed_users), file, indent=4)
+        
+        print(f"{len(self.statuses)} total statuses found")
+        self.serializeStatuses()
          
-    def crawlThroughKeyword(self, graph, keyword: str):
-    
+    def crawlThroughKeyword(self, keyword: str):
         print(flowerBox)
         print(f"Beginning keyword crawl for: #{keyword}")
         
-        for status in self.mastodon_api_service.searchTimelineHashtag(hashtag=keyword, min_id=start, max_id=end, favorite_requirement=2 ):
-            if status.id not in graph:
-                # Check if user is a seed user candidate, which we define as having at least 750 followers
+        for status in self.mastodon_api_service.searchTimelineHashtag(hashtag=keyword, min_id=start, max_id=end, favorite_requirement=0 ):
+            if status.id not in self.status_ids:
+                # Check if user is a seed user candidate, which we define as having at least 1000 followers
                 user = self.mastodon_api_service.getAccount(status.account.id)
-                if user.followers_count >= 750:
+                if user.followers_count >= 1000:
                     self.seed_users[user.id] = user.acct
                 
                 # Crawl the Status
-                self.crawlStatus(graph=graph, status=status, depth=0)
-                
-            
-        print("Status crawl finished")
-        print(flowerBox)
+                self.statuses.append(status)
+                self.status_ids.add(status.id)
         
-    def serliazeStatusGraph(seflf, graph):
-        data = nx.node_link_data(graph)
-        for node in data["nodes"]:
-            status = node.pop("status")
-            node.update(
-                            {
-                                "id" : status.id,
-                                "user_id" : status.account.id,
-                                "content" : status.content
-                            }       
-                        )
+        
+    def serializeStatuses(self):
+        simplified_statuses = []
+        for status in self.statuses:
+        
+            simplified_statuses.append({
+                        "id" : status.id,
+                        "user_id" : status.account.id,
+                        "content" : status.content,
+                        "tags": status.tags.to_json(),
+                        "created_at" : status.created_at.strftime("%Y-%m-%d %H:%M:%S")
+                    })
 
-        with open("status_graph.json", "w") as f:
-            json.dump(data, f, indent=4)
+        with open("statuses.json", "w") as f:
+            json.dump(simplified_statuses, f, indent=4) 
+        
+    def serializeUsers(self):
+            simplified_users = []
+            for user in self.users:
+                simplified_users.append({
+                            "id" : user.id,
+                            "username" : user.username,
+                            "followers" : user.followers_count,
+                            "following" : user.following_count,
+                            "created_at" : user.created_at.strftime("%Y-%m-%d %H:%M:%S")
+                        })
+    
+            with open("users.json", "w") as f:
+                json.dump(simplified_users, f, indent=4)   
 
-    def crawlStatus(self, graph, status, depth):
-        #print(f"new depth: {depth}")
-        graph.add_node(status.id, status=status)
 
-        if depth < self.depth_limit:
-            # Handle Replies
-            replies = self.mastodon_api_service.getReplies(status_id=status.id)
-            for reply in replies:
-                try:
-                    if reply.id not in graph: 
-                        self.crawlStatus(graph, reply, depth + 1)
-                    graph.add_edge(reply.in_reply_to_id, reply.id, relationship="reply")
-                except MastodonAPIError:
-                    print(f"Could not retrieve reply {reply.id}")
-                
-            # Hanlde Parent Post
-            if status.in_reply_to_id:
-                try:
-                    if status.in_reply_to_id not in graph:
-                        new_status = self.mastodon_api_service.getStatus(status.in_reply_to_id)
-                        self.crawlStatus(graph, new_status, depth + 1)
-                    graph.add_edge(status.in_reply_to_id, status.id, relationship="reply")
-                except MastodonAPIError:
-                    print(f"Could not retrieve parent {status.in_reply_to_id}")
-            
-            # Handle If Reblog
-            if status.reblog:
-                try:
-                    if status.reblog.id not in graph:
-                        self.crawlStatus(graph, status.reblog, depth + 1)
-                    graph.add_edge(status.reblog.id, status.id, type="reblog")
-                except MastodonAPIError:
-                    print(f"Could not retrieve original post with id {status.reblog.id}")
