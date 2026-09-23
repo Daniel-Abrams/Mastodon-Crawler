@@ -1,14 +1,15 @@
 import requests
 import os
 import json
-from dotenv import load_dotenv
 import os
+import datetime
+
 from mastodon import Mastodon
 from mastodon.return_types import *
-
+from dotenv import load_dotenv
 from collections import defaultdict
 from typing import Any
-
+from datetime import datetime, timedelta
 
 class MastodonAPIService:
     
@@ -16,10 +17,12 @@ class MastodonAPIService:
     status_cache = {}
     followers = {}
     followees = {}
+    reposts = {}
     reply_dict: defaultdict[str, list[Any]] = defaultdict(list)
     
     def __init__(self):
         load_dotenv()
+        self.loadReposts()
         self.loadRelationships()
         self.mastodon = Mastodon(access_token=os.getenv("MASTODON_API_ACCESS_TOKEN"), api_base_url = "https://mastodon.social")
         self.mastodon.account_verify_credentials()
@@ -40,16 +43,15 @@ class MastodonAPIService:
         )
         
         os.environ["mastodon_API_ACCESS_TOKEN"] = json.loads(response.text)["access_token"]
-        print(json.loads(response.text))
+        print(f"Access token: {json.loads(response.text)["access_token"]}")
         
-    def searchTimelineHashtag(self, hashtag: str, min_id, max_id, limit=200, favorite_requirement=0):
+    def searchTimelineHashtag(self, hashtag: str, min_id, max_id, limit=20):
         statuses = self.mastodon.timeline_hashtag(hashtag=hashtag, min_id=min_id, max_id=max_id, limit=40)
         ctr = 0
         res = []
         while statuses:
             for status in statuses:
-                status.tags.to_json
-                if status.favourites_count >= favorite_requirement:
+                if status.replies_count > 10 or status.reblogs_count > 5:
                     res.append(status)
                     ctr += 1
                 if ctr >= limit:
@@ -60,13 +62,18 @@ class MastodonAPIService:
         print(f"Found {ctr} results for statuses containing #{hashtag}")
         return res
             
-    def search(self, query : str, type = "hashtags"):
-        return self.mastodon.search_v2(q=query)
+    def search(self, query: str, min_id, max_id, limit=200, type = "hashtags"):
+        return self.mastodon.search_v2(q=query, min_id=min_id, max_id=max_id, type=type, limit=limit)
     
     def getStatus(self, status_id) -> Status:
         if status_id in self.status_cache:
             return self.status_cache[status_id]
-        return self.mastodon.status(status_id)
+        else:
+            status = self.mastodon.status(status_id)
+            self.status_cache[status_id] = status
+            if status.reblog:
+                self.status_cache[status.reblog.id] = status.reblog
+            return status
     
     def getAccountId(self, username):
         return self.mastodon.account_search(username, limit=1)[0]
@@ -74,25 +81,22 @@ class MastodonAPIService:
     def getStatusesByAccountName(self,username, start_date, end_date):
         user_account = self.mastodon.account_search(username, limit=1)
         if user_account:
-            self.getStatusesByAccount(user_account[0].id, start_date, end_date)
+            return self.getStatusesByAccount(user_account[0].id, start_date, end_date)
 
-    def getStatusesByAccountID(self, id, start_date, end_date):
+    def getStatusesByAccountID(self, id, start_date, end_date, limit=20):
         cache_key = (id, start_date, end_date)
 
         if cache_key in self.status_cache:
-            yield from self.status_cache[cache_key]
-            return
+            return self.status_cache[cache_key]
 
         self.status_cache[cache_key] = []
 
-        statuses = self.mastodon.account_statuses(id,since_id=None,min_id=start_date,max_id=end_date,limit=40)
+        statuses = self.mastodon.account_statuses(id,min_id=start_date,max_id=end_date,limit=limit)
 
-        while statuses:
-            for status in statuses:
-                self.status_cache[cache_key].append(status)
-                yield status
 
-            statuses = self.mastodon.fetch_next(statuses)
+        for status in statuses:
+            self.status_cache[cache_key].append(status)
+        return self.status_cache[cache_key]
     
     def getFavorites(self, status_id):
         
@@ -114,6 +118,34 @@ class MastodonAPIService:
             self.status_cache[status.id] = status
         return self.reply_dict[status_id]
     
+    def getContext(self, status_id):
+        context = self.mastodon.status_context(status_id)
+        for status in context["descendants"]:
+            self.status_cache[status.id] = status
+            self.reply_dict[status.in_reply_to_id].append(status)
+        for status in context["ancestors"]:
+            self.status_cache[status.id] = status
+        return context.ancestors, context.descendants
+
+    def getReblogs(self, status_id, posted: datetime):
+        res = []
+
+        if status_id in self.reposts:
+            for id in self.reposts[status_id]:
+                res.append(self.getStatus(id))
+            return res
+        
+        self.reposts[status_id] = []
+        users = self.mastodon.status_reblogged_by(status_id)
+        for user in users:
+            statuses = self.getStatusesByAccountID(user.id, start_date=posted, end_date=posted + timedelta(days=1))
+            for status in statuses:
+                if status.reblog and status.reblog.id == status_id:
+                    res.append(status)
+                    self.reposts[status_id].append(status.id)
+        self.saveReposts()
+        return res
+            
     def getAccount(self, id) -> Account:
         if id in self.user_cache:
             return self.user_cache[id]
@@ -129,24 +161,22 @@ class MastodonAPIService:
         followees = self.mastodon.account_following(id)
         while followees:
             for followee in followees:
-                self.followers[id].add(followee.id)
+                self.followees[id].add(followee.id)
                 self.user_cache[followee.id] = followee
             followees = self.mastodon.fetch_next(followees)
         self.saveRelationships()
         return self.followees[id] 
             
-    def getFollowers(self, id, max=1000):
+    def getFollowers(self, id) -> set:
         if id in self.followers:
             return self.followers[id]
         
-        ctr = 0
         self.followers[id] = set()
         followers = self.mastodon.account_followers(id)
-        while followers and ctr <= max:
+        while followers:
             for follower in followers:
                  self.followers[id].add(follower.id)
                  self.user_cache[follower.id] = follower
-            ctr += len(followers)
             followers = self.mastodon.fetch_next(followers)
         self.saveRelationships()
         return self.followers[id]
@@ -182,3 +212,11 @@ class MastodonAPIService:
                 self.followees[key] = set(self.followees[key])
         except Exception:
             pass
+
+    def loadReposts(self):
+        with open("reposts.json", "r") as f:
+            self.reposts = json.load(f)
+    
+    def saveReposts(self):
+        with open("reposts.json", "w") as f:
+            json.dump(self.reposts, f, indent=4)

@@ -1,13 +1,22 @@
 [project]
-name = "project1"
+name = "project1 -- 2025 LA Wildfires Analysis"
 version = "0.1.0"
-description = "Add your description here"
+description = "CSE472 Mastadon crawling, measuring, and visualization project"
 readme = "README.md"
 authors = [
-    { name = "Daniel-Abrams", email = "danlab1104@gmail.com" }
+    { name = "Daniel-Abrams", email = "dlabram4@asu.edu" }
 ]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "mastodon-py==2.2.2",
+    "matplotlib==3.11.2",
+    "networkx==3.6.1",
+    "numpy==2.5.3",
+    "python-dotenv==1.2.3",
+    "requests==2.34.2",
+    "scipy==1.18.1",
+    "wordcloud==1.9.6",
+]
 
 [project.scripts]
 project1 = "project1:main"
