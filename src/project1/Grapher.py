@@ -10,9 +10,7 @@ from project1.seeds import keywords
 from collections import defaultdict
 
 from project1.mastodon_api_service import MastodonAPIService
-
-
-flowerBox = "--------------------------------------------------------------------"
+from project1.config import *
 
 class Grapher:
     tag_colors = {}
@@ -28,11 +26,11 @@ class Grapher:
             self.loadStatuses()
             
     def loadUsers(self):
-        with open("users.json", "r") as file:
+        with open(DATA_DIRECTORY / "users.json", "r") as file:
             self.users = json.load(file)
             
     def loadStatuses(self):
-        with open("statuses.json", "r") as file:
+        with open(DATA_DIRECTORY / "statuses.json", "r") as file:
             self.statuses = json.load(file)
             for status in self.statuses:
                 self.user_post_map[status['user_id']].add(status['id'])
@@ -95,7 +93,7 @@ class Grapher:
     
     def saveGraph(self, graph, name):
         
-        nx.write_gexf(graph, f"{name}.gexf")
+        nx.write_gexf(graph, GRAPHICS_DIRECTORY / f"{name}.gexf")
     
 
     def findStatus(self, id):
@@ -163,7 +161,7 @@ class Grapher:
         plt.xlabel('PageRank Score')
         plt.ylabel('Frequency')
         plt.margins(y=0.1)
-
+        plt.savefig(GRAPHICS_DIRECTORY / "PageRankDistribution.png")
         plt.show()
     
     def calculateClosenessCentrality(self, graph_name):
@@ -176,7 +174,7 @@ class Grapher:
         plt.title('User Network Closeness Centrality Distribution')
         plt.xlabel('Closeness Centrality')
         plt.ylabel('Frequency')
-
+        plt.savefig(GRAPHICS_DIRECTORY / "ClosenessCentralityDistr.png")
         plt.show()
     
     def calculateClusteringCoefficient(self, graph_name):
@@ -209,7 +207,7 @@ class Grapher:
             plt.title('Average Number of Relations at Local Level per Node')
             plt.xlabel('Average Relations')
             plt.ylabel('Frequency')
-
+            plt.savefig(GRAPHICS_DIRECTORY / "LocalAvgRelations.png")
             plt.show()
         except FileNotFoundError:
             print("Could not find a graph to use. Create the graph first.")
@@ -225,12 +223,12 @@ class Grapher:
 
 
     def generateWordCloud(self):
-        fire_mask = np.array(Image.open("fire_outline.jpg"))
-        text =  open('llm_keywords.txt').read()
+        fire_mask = np.array(Image.open(GRAPHICS_DIRECTORY / "fire_outline.jpg"))
+        text =  open(DATA_DIRECTORY / 'llm_keywords.txt').read()
         
         wc = WordCloud(background_color="white", mask=fire_mask, max_words=3000,scale=3, colormap="jet", stopwords=set(STOPWORDS))
         
         wc.generate(text)
-
-        wc.to_file("wordcloud.png")
+        
+        wc.to_file(GRAPHICS_DIRECTORY / "wordcloud.png")
             

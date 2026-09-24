@@ -3,6 +3,16 @@
 This project was made in a uv environment. Learn about uv [here](https://docs.astral.sh/uv/). See `pyproject.toml`
 for a list of required dependencies.
 
+- Create a Mastadon application
+
+- Make sure the following enviroment variables are set to valid values:
+  ```
+  MASTODON_API_KEY
+  MASTODON_API_SECRET
+  MASTODON_REDIRECT_URI
+  MASTODON_API_ACCESS_TOKEN
+  ```
+
 ### Running the Code
 
 All functions can be run throug `main.py` with one command line argument. Make sure you are in the

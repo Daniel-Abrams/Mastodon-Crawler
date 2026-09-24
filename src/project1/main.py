@@ -6,6 +6,7 @@ from project1.seeds import keywords, seed_users
 
 from project1.mastodon_api_service import MastodonAPIService
 
+
 def main():
     parser = argparse.ArgumentParser(prog='main')
     parser.add_argument("mode", choices=['get-access-token','crawl-keywords','crawl-users','info-graph','user-graph','network-measures', 'generate-wordcloud'])
@@ -39,8 +40,6 @@ def main():
         case 'generate-wordcloud':
             grapher = Grapher()
             grapher.generateWordCloud()
-
-    # with open("seed_users.json", "r") as file
     
 
 if __name__ == "__main__":
