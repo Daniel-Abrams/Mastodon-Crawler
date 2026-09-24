@@ -28,6 +28,11 @@ python main.py network-measures     # Get network measures and distributions fro
 python main.py generate-wordcloud   # Generate a word cloud from llm_keywords.txt
 ```
 
+## Content Anaylsis
+
+Status content analysis is contained in `Content_Analyzer.ipynb` and is meant to be executed in a Colab notebook. Adjustments to
+file paths may need to be made if it is run locally.
+
 ### More Information
 
 See `CSE_472__Project_I_Report__Abrams.pdf` for more information on data collection and analysis methods used in this project.
