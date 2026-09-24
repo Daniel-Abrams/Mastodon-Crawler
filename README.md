@@ -16,7 +16,7 @@ for a list of required dependencies.
 ### Running the Code
 
 All functions can be run throug `main.py` with one command line argument. Make sure you are in the
-same directory as the file (`src`). The different run modes are specified below:
+same directory as the file (`Project1/src/project1`). The different run modes are specified below:
 
 ```
 python main.py get-access-token     # Get an access token for the platform crawler
