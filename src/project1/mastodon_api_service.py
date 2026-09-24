@@ -4,7 +4,7 @@ import json
 import os
 import datetime
 
-from mastodon import Mastodon
+from mastodon import Mastodon, MastodonAPIError
 from mastodon.return_types import *
 from dotenv import load_dotenv
 from collections import defaultdict
@@ -27,7 +27,6 @@ class MastodonAPIService:
         self.loadReposts()
         self.loadRelationships()
         self.mastodon = Mastodon(access_token=os.getenv("MASTODON_API_ACCESS_TOKEN"), api_base_url = "https://mastodon.social")
-        print(os.getenv("mastodon_API_KEY"))
         self.mastodon.account_verify_credentials()
 
     def getAccessToken():
@@ -133,7 +132,10 @@ class MastodonAPIService:
 
         if status_id in self.reposts:
             for id in self.reposts[status_id]:
-                res.append(self.getStatus(id))
+                try:
+                    res.append(self.getStatus(id))
+                except MastodonAPIError:
+                    print(f"Could not resolve status with id {id}")
             return res
         
         self.reposts[status_id] = []
@@ -215,7 +217,6 @@ class MastodonAPIService:
             pass
 
     def loadReposts(self):
-        print(Path(DATA_DIRECTORY / "reposts.json"))
         with open(DATA_DIRECTORY / "reposts.json", "r") as f:
             self.reposts = json.load(f)
     

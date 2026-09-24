@@ -92,25 +92,28 @@ class Crawler:
 
     def visitStatus(self, status):
         if status.id not in self.status_ids:
-            user = self.mastodon_api_service.getAccount(status.account.id)
-            if user.followers_count >= 1000:
-                self.seed_users[user.id] = user.acct
-            
-            # Crawl the Status
-            self.statuses.append(status)
-            self.status_ids.add(status.id)
-            
-            # Handle Context
-            ancestors, descendants = self.mastodon_api_service.getContext(status.id)
-            for ancestor in ancestors:
-                if ancestor.id not in self.status_ids:
-                    self.status_ids.add(ancestor.id)
-                    self.statuses.append(ancestor)
-            for descendant in descendants:
-                if descendant.id not in self.status_ids:
-                    self.status_ids.add(descendant.id)
-                    self.statuses.append(descendant)
+            try:
+                user = self.mastodon_api_service.getAccount(status.account.id)
+                if user.followers_count >= 1000:
+                    self.seed_users[user.id] = user.acct
                 
+                # Crawl the Status
+                self.statuses.append(status)
+                self.status_ids.add(status.id)
+                
+                # Handle Context
+                ancestors, descendants = self.mastodon_api_service.getContext(status.id)
+                for ancestor in ancestors:
+                    if ancestor.id not in self.status_ids:
+                        self.status_ids.add(ancestor.id)
+                        self.statuses.append(ancestor)
+                for descendant in descendants:
+                    if descendant.id not in self.status_ids:
+                        self.status_ids.add(descendant.id)
+                        self.statuses.append(descendant)
+            except MastodonAPIError:
+                print(f"Could not resolve user with id {status.account.id}")
+
     def serializeStatuses(self):
         simplified_statuses = []
         for status in self.statuses:

@@ -151,7 +151,7 @@ class Grapher:
     # Network Measures
     
     def calculatePageRank(self, graph_name):
-        graph = nx.read_gexf(f"./{graph_name}.gexf")
+        graph = nx.read_gexf( GRAPHS_DIRECTORY / f"{graph_name}.gexf")
         pagerank_scores = nx.pagerank(graph, alpha=0.85)
         
         counts, bins, patches = plt.hist(pagerank_scores.values(), bins=20, color='skyblue', edgecolor='black')
@@ -165,7 +165,7 @@ class Grapher:
         plt.show()
     
     def calculateClosenessCentrality(self, graph_name):
-        graph = nx.read_gexf(f"./{graph_name}.gexf")
+        graph = nx.read_gexf(GRAPHS_DIRECTORY / f"{graph_name}.gexf")
         closeness = nx.closeness_centrality(graph)
         print(f"harmonic diameter: {nx.harmonic_diameter(graph)}")
         
@@ -179,7 +179,7 @@ class Grapher:
     
     def calculateClusteringCoefficient(self, graph_name):
         try:
-            graph = nx.read_gexf(f"./{graph_name}.gexf")
+            graph = nx.read_gexf(GRAPHS_DIRECTORY / f"{graph_name}.gexf")
             ev_centrality = nx.clustering(graph)
             
             counts, bins, patches = plt.hist(ev_centrality.values(), bins=50, color='orange', edgecolor='black')
@@ -194,7 +194,7 @@ class Grapher:
 
     def calculateLocalAvgRelations(self, graph_name):
         try:
-            graph = nx.read_gexf(f"./{graph_name}.gexf")
+            graph = nx.read_gexf(GRAPHS_DIRECTORY / f"{graph_name}.gexf")
             
             scores = []
             for node in graph.nodes():
@@ -216,7 +216,7 @@ class Grapher:
     
     def calculateGlobalAvgRelations(self, graph_name):
         try:
-            graph = nx.read_gexf(f"./{graph_name}.gexf")
+            graph = nx.read_gexf(GRAPHS_DIRECTORY / f"{graph_name}.gexf")
             return 2 * graph.number_of_edges() / graph.number_of_nodes()
         except FileNotFoundError:
             print("Could not find a graph to use. Create the graph first.")
@@ -230,5 +230,5 @@ class Grapher:
         
         wc.generate(text)
         
-        wc.to_file(GRAPHICS_DIRECTORY / "wordcloud.png")
+        wc.to_file(GRAPHICS_DIRECTORY / "wordcggloud.png")
             
