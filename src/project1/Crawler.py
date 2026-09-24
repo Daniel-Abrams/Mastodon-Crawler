@@ -4,7 +4,7 @@ from mastodon import MastodonAPIError
 from datetime import datetime, timezone
 from collections import defaultdict
 
-from mastodon_api_service import MastodonAPIService
+from project1.mastodon_api_service import MastodonAPIService
 
 # Approximate timeline of the LA wildfires + some time after
 start = datetime(2025, 1, 7, tzinfo=timezone.utc)

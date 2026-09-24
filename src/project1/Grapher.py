@@ -6,10 +6,10 @@ import numpy as np
 
 from PIL import Image
 from wordcloud import WordCloud, STOPWORDS
-from seeds import keywords
+from project1.seeds import keywords
 from collections import defaultdict
 
-from mastodon_api_service import MastodonAPIService
+from project1.mastodon_api_service import MastodonAPIService
 
 
 flowerBox = "--------------------------------------------------------------------"

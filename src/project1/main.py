@@ -1,10 +1,10 @@
 import argparse
 
-from Crawler import Crawler
-from Grapher import Grapher
-from seeds import keywords, seed_users
+from project1.Crawler import Crawler
+from project1.Grapher import Grapher
+from project1.seeds import keywords, seed_users
 
-from mastodon_api_service import MastodonAPIService
+from project1.mastodon_api_service import MastodonAPIService
 
 def main():
     parser = argparse.ArgumentParser(prog='main')
