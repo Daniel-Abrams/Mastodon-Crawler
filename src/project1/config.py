@@ -1,6 +1,6 @@
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 GRAPHS_DIRECTORY = PROJECT_ROOT / "graphs"
 GRAPHICS_DIRECTORY = PROJECT_ROOT / "graphics"
-DATA_DIRECTORY = PROJECT_ROOT / "mastadon_data"
+DATA_DIRECTORY = PROJECT_ROOT / "mastodon_data"

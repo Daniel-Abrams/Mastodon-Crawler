@@ -11,6 +11,8 @@ from collections import defaultdict
 from typing import Any
 from datetime import datetime, timedelta
 
+from project1.config import *
+
 class MastodonAPIService:
     
     user_cache = {}
@@ -21,14 +23,15 @@ class MastodonAPIService:
     reply_dict: defaultdict[str, list[Any]] = defaultdict(list)
     
     def __init__(self):
-        load_dotenv()
+        load_dotenv(PROJECT_ROOT / ".env", override=True)
         self.loadReposts()
         self.loadRelationships()
         self.mastodon = Mastodon(access_token=os.getenv("MASTODON_API_ACCESS_TOKEN"), api_base_url = "https://mastodon.social")
+        print(os.getenv("mastodon_API_KEY"))
         self.mastodon.account_verify_credentials()
 
     def getAccessToken():
-        load_dotenv()
+        load_dotenv(PROJECT_ROOT / ".env", override=True)
         API_key = os.getenv("mastodon_API_KEY")
         API_secret = os.getenv("mastodon_API_SECRET")
         redirect_uri = os.getenv("mastodon_REDIRECT_URI")
@@ -41,8 +44,6 @@ class MastodonAPIService:
                 "grant_type": "client_credentials",
             }
         )
-        
-        os.environ["mastodon_API_ACCESS_TOKEN"] = json.loads(response.text)["access_token"]
         print(f"Access token: {json.loads(response.text)["access_token"]}")
         
     def searchTimelineHashtag(self, hashtag: str, min_id, max_id, limit=20):
@@ -191,21 +192,21 @@ class MastodonAPIService:
             frozen_followees[key] = list(self.followees[key])
             
             
-        with open("followers.json", "w") as f:
+        with open(DATA_DIRECTORY / "followers.json", "w") as f:
             json.dump(frozen_followers, f, indent=4)
 
-        with open("followees.json", "w") as f:
+        with open(DATA_DIRECTORY / "followees.json", "w") as f:
             json.dump(frozen_followees, f, indent=4)  
     
     def loadRelationships(self):
         try:
-            with open("followers.json", "r") as f:
+            with open(DATA_DIRECTORY / "followers.json", "r") as f:
                 self.followers = json.load(f)
 
             for key in self.followers.keys():
                 self.followers[key] = set(self.followers[key])
                 
-            with open("followees.json", "r") as f:
+            with open(DATA_DIRECTORY / "followees.json", "r") as f:
                 self.followees = json.load(f)
             
             for key in self.followees.keys():
@@ -214,9 +215,10 @@ class MastodonAPIService:
             pass
 
     def loadReposts(self):
-        with open("reposts.json", "r") as f:
+        print(Path(DATA_DIRECTORY / "reposts.json"))
+        with open(DATA_DIRECTORY / "reposts.json", "r") as f:
             self.reposts = json.load(f)
     
     def saveReposts(self):
-        with open("reposts.json", "w") as f:
+        with open(DATA_DIRECTORY / "reposts.json", "w") as f:
             json.dump(self.reposts, f, indent=4)

@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from collections import defaultdict
 
 from project1.mastodon_api_service import MastodonAPIService
+from project1.config import *
 
 # Approximate timeline of the LA wildfires + some time after
 start = datetime(2025, 1, 7, tzinfo=timezone.utc)
@@ -24,14 +25,11 @@ class Crawler:
             self.mastodon_api_service = MastodonAPIService()
             
     def loadStatuses(self):
-        with open("statuses.json", "r") as file:
+        with open(DATA_DIRECTORY / "statuses.json", "r") as file:
             self.statuses = json.load(file)
             for status in self.statuses:
-                self.user_post_map[status['user_id']].add(status['id'])
-    
-    def loadSeedUsers(self):
-        with open("seed_user_candidates.json", "r") as file:
-            self.seed_users = json.load(file)                    
+                self.user_post_map[status['user_id']].add(status['id'])   
+                           
     def GetRelevantUsers(self, seedUsers):
         self.loadStatuses()
         
@@ -70,7 +68,7 @@ class Crawler:
         for keyword in keywords:
             self.crawlThroughKeyword(keyword=keyword)
         
-        with open("seed_user_candidates.json", "w") as file:
+        with open(DATA_DIRECTORY / "seed_user_candidates.json", "w") as file:
             json.dump((self.seed_users), file, indent=4)
         
         print(f"{len(self.statuses)} total statuses found")
@@ -80,7 +78,7 @@ class Crawler:
         print(flowerBox)
         print(f"Beginning keyword crawl for: #{keyword}")
         
-        for status in self.mastodon_api_service.searchTimelineHashtag(hashtag=keyword, min_id=start, max_id=end, favorite_requirement=0):
+        for status in self.mastodon_api_service.searchTimelineHashtag(hashtag=keyword, min_id=start, max_id=end):
             if status.id not in self.status_ids:
                 self.visitStatus(status)
                 
@@ -130,7 +128,7 @@ class Crawler:
                         "reblog" : reblog_id
                     })
 
-        with open("statuses.json", "w") as f:
+        with open(DATA_DIRECTORY / "statuses.json", "w") as f:
             json.dump(simplified_statuses, f, indent=4) 
         
     def serializeUsers(self):
@@ -145,7 +143,7 @@ class Crawler:
                             "created_at" : user.created_at.strftime("%Y-%m-%d %H:%M:%S")
                         })
     
-            with open("users.json", "w") as f:
+            with open(DATA_DIRECTORY / "users.json", "w") as f:
                 json.dump(simplified_users, f, indent=4)   
 
 
@@ -164,6 +162,6 @@ class Crawler:
             else:
                 s['reblog'] = None
 
-            with open("statuses.json", "w") as f:
+            with open(DATA_DIRECTORY / "statuses.json", "w") as f:
                 json.dump(self.statuses, f, indent=4)
                 

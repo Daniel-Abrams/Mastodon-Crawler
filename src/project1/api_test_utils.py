@@ -1,8 +1,5 @@
 import requests
-import os
 import json
-from dotenv import load_dotenv
-import os
 
 # Test public data access
 
